@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Multilingual Feed</title>
+</head>
+<body>
+  <h2>Live Feed</h2>
+
+  <label for="languageToggle">Translate To:</label>
+  <select id="languageToggle">
+    <option value="">Original</option>
+    <option value="en">English</option>
+    <option value="hi">Hindi</option>
+    <option value="te">Telugu</option>
+  </select>
+
+  <ul id="messages"></ul>
+
+  <input type="text" id="messageInput" placeholder="Type your message">
+  <button onclick="sendMessage()">Send</button>
+
+  <script>
+    const protocol = window.location.protocol === 'https:' ? 'wss' : 'ws';
+    const socket = new WebSocket(`${protocol}://${window.location.host}/ws/feed/`);
+
+    socket.onmessage = function(e) {
+      const data = JSON.parse(e.data);
+      const lang = document.getElementById("languageToggle").value;
+      if (lang && data.original) {
+        fetch(`https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=${lang}&dt=t&q=` + encodeURIComponent(data.original))
+          .then(res => res.json())
+          .then(res => {
+            const li = document.createElement('li');
+            li.innerText = res[0][0][0]; // translated text
+            document.getElementById('messages').appendChild(li);
+          });
+      } else {
+        const li = document.createElement('li');
+        li.innerText = data.original;
+        document.getElementById('messages').appendChild(li);
+      }
+    };
+
+    function sendMessage() {
+      const input = document.getElementById("messageInput");
+      socket.send(input.value);
+      input.value = "";
+    }
+  </script>
+</body>
+</html>
